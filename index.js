@@ -1,6 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 const admin = require('firebase-admin');
-const fs = require('fs');
+const express = require('express');
+
+const app = express();
+app.use(express.json());
 
 const serviceAccount = require('./firebase.json');
 
@@ -13,32 +16,37 @@ const db = admin.database();
 
 const token = "8532645384:AAE1EPd4Ol51amuh49f6G-ZO9wbkeptrPvc";
 
-const bot = new TelegramBot(token, {
-  polling: {
-    interval: 300,
-    autoStart: true,
-    params: {
-      timeout: 10
-    }
-  }
-});
+const bot = new TelegramBot(token);
 
-console.log('Bot Running...');
+const url = "https://YOUR-RAILWAY-URL.up.railway.app";
 
-bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-  const text = msg.text || '';
+bot.setWebHook(`${url}/bot${token}`);
 
-  try {
-    await db.ref('messages').push({
-      user: msg.from.username || 'unknown',
+app.post(`/bot${token}`, async (req, res) => {
+  const msg = req.body.message;
+
+  if (msg) {
+    const chatId = msg.chat.id;
+    const text = msg.text || "";
+
+    await db.ref("messages").push({
+      user: msg.from.username || "unknown",
       text,
       time: Date.now()
     });
 
     bot.sendMessage(chatId, `Saved: ${text}`);
-  } catch (err) {
-    console.error(err);
-    bot.sendMessage(chatId, 'Error saving message');
   }
+
+  res.sendStatus(200);
+});
+
+app.get("/", (req, res) => {
+  res.send("Bot running!");
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Server running...");
 });
