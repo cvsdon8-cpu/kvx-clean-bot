@@ -5,10 +5,10 @@ const fs = require('fs');
 const app = express();
 app.use(express.json());
 
-/* FILE SYSTEM */
+/* NOTES FILE */
 
 if (!fs.existsSync('notes.json')) {
-  fs.writeFileSync('notes.json', '[]');
+  fs.writeFileSync('notes.json', '{}');
 }
 
 /* TELEGRAM */
@@ -17,9 +17,13 @@ const token = "8532645384:AAE1EPd4Ol51amuh49f6G-ZO9wbkeptrPvc";
 
 const bot = new TelegramBot(token);
 
-const url = "https://kvx-clean-bot-production.up.railway.app";
+const url = "https://"kvx-clean-bot-production.up.railway.app;
 
 bot.setWebHook(`${url}/bot${token}`);
+
+/* GEMINI API */
+
+const GEMINI_API_KEY = "AIzaSyBY8DgkkTpvOjlaDrziKmQsqSAdL0d7mHM";
 
 /* BOT */
 
@@ -35,18 +39,114 @@ app.post(`/bot${token}`, async (req, res) => {
   const text = msg.text || "";
   const username = msg.from.username || "unknown";
 
+  let data = JSON.parse(fs.readFileSync('notes.json'));
+
+  /* USER CREATE */
+
+  if (!data[chatId]) {
+    data[chatId] = [];
+  }
+
   /* START */
 
   if (text === "/start") {
 
-    bot.sendMessage(
-      chatId,
-      `👋 Welcome to KVX Notes Bot
+    bot.sendMessage(chatId,
 
-📝 Send any message
-💾 Bot will save it
-📂 Use /notes to see saved notes`
-    );
+`⚡ KVX AI NOTES SYSTEM ⚡
+
+👋 Welcome ${username}
+
+📝 Save Notes
+🤖 Gemini AI Assistant
+🔍 Search Notes
+🚀 Powered by KVX
+
+📌 Commands:
+
+/notes → Show notes
+/delete → Delete notes
+/count → Total notes
+/search word → Search notes
+/ai your question → Ask AI
+/help → Help panel`
+);
+
+    return res.sendStatus(200);
+  }
+
+  /* HELP */
+
+  if (text === "/help") {
+
+    bot.sendMessage(chatId,
+
+`🛠 KVX HELP PANEL
+
+/notes → Show notes
+/delete → Delete notes
+/count → Total notes
+/search word → Search notes
+/ai your question → Ask AI
+
+⚡ KVX SYSTEM`
+);
+
+    return res.sendStatus(200);
+  }
+
+  /* AI SYSTEM */
+
+  if (text.startsWith("/ai ")) {
+
+    const prompt = text.replace("/ai ", "");
+
+    try {
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      const aiText =
+        result.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "❌ AI Error";
+
+      bot.sendMessage(chatId,
+
+`🤖 KVX AI RESPONSE
+
+${aiText}
+
+⚡ Powered by Gemini AI`
+);
+
+    } catch (err) {
+
+      console.log(err);
+
+      bot.sendMessage(chatId,
+        "❌ AI request failed"
+      );
+    }
 
     return res.sendStatus(200);
   }
@@ -55,28 +155,108 @@ app.post(`/bot${token}`, async (req, res) => {
 
   if (text === "/notes") {
 
-    let data = JSON.parse(fs.readFileSync('notes.json'));
+    if (data[chatId].length === 0) {
 
-    if (data.length === 0) {
-      bot.sendMessage(chatId, "❌ No notes found");
+      bot.sendMessage(chatId,
+        "❌ No notes found"
+      );
+
       return res.sendStatus(200);
     }
 
-    let notes = data
+    let notes = data[chatId]
       .slice(-10)
-      .map(x => `👤 ${x.user}\n📝 ${x.text}`)
+      .map((x, i) =>
+        `${i + 1}. 📝 ${x.text}`
+      )
       .join("\n\n");
 
-    bot.sendMessage(chatId, notes);
+    bot.sendMessage(chatId,
+
+`📂 YOUR NOTES
+
+${notes}
+
+⚡ KVX SYSTEM`
+);
 
     return res.sendStatus(200);
   }
 
-  /* SAVE MESSAGE */
+  /* DELETE */
 
-  let data = JSON.parse(fs.readFileSync('notes.json'));
+  if (text === "/delete") {
 
-  data.push({
+    data[chatId] = [];
+
+    fs.writeFileSync('notes.json', JSON.stringify(data, null, 2));
+
+    bot.sendMessage(chatId,
+
+`🗑 All your notes deleted
+
+⚡ KVX SYSTEM`
+);
+
+    return res.sendStatus(200);
+  }
+
+  /* COUNT */
+
+  if (text === "/count") {
+
+    bot.sendMessage(chatId,
+
+`📊 Your Total Notes: ${data[chatId].length}
+
+⚡ KVX SYSTEM`
+);
+
+    return res.sendStatus(200);
+  }
+
+  /* SEARCH */
+
+  if (text.startsWith("/search ")) {
+
+    const keyword = text.replace("/search ", "").toLowerCase();
+
+    const results = data[chatId]
+      .filter(x =>
+        x.text.toLowerCase().includes(keyword)
+      );
+
+    if (results.length === 0) {
+
+      bot.sendMessage(chatId,
+        "❌ No matching notes found"
+      );
+
+      return res.sendStatus(200);
+    }
+
+    let searchNotes = results
+      .slice(-10)
+      .map((x, i) =>
+        `${i + 1}. 📝 ${x.text}`
+      )
+      .join("\n\n");
+
+    bot.sendMessage(chatId,
+
+`🔍 SEARCH RESULTS
+
+${searchNotes}
+
+⚡ KVX SYSTEM`
+);
+
+    return res.sendStatus(200);
+  }
+
+  /* SAVE NOTE */
+
+  data[chatId].push({
     user: username,
     text,
     time: Date.now()
@@ -84,7 +264,14 @@ app.post(`/bot${token}`, async (req, res) => {
 
   fs.writeFileSync('notes.json', JSON.stringify(data, null, 2));
 
-  bot.sendMessage(chatId, `✅ Saved: ${text}`);
+  bot.sendMessage(chatId,
+
+`✅ Note Saved Successfully
+
+📝 ${text}
+
+⚡ KVX SYSTEM`
+);
 
   res.sendStatus(200);
 });
@@ -92,7 +279,7 @@ app.post(`/bot${token}`, async (req, res) => {
 /* HOME */
 
 app.get("/", (req, res) => {
-  res.send("KVX Bot Running ✅");
+  res.send("KVX AI SYSTEM RUNNING ✅");
 });
 
 /* SERVER */
@@ -100,5 +287,5 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server running...");
+  console.log("⚡ KVX AI SERVER RUNNING...");
 });
