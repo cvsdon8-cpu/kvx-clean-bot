@@ -106,7 +106,7 @@ app.post(`/bot${token}`, async (req, res) => {
     try {
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: {
@@ -131,7 +131,7 @@ app.post(`/bot${token}`, async (req, res) => {
       console.log(result);
 
       const aiText =
-        result.candidates?.[0]?.content?.parts?.[0]?.text;
+result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!aiText) {
 
