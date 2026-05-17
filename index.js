@@ -13,7 +13,15 @@ const db = admin.database();
 
 const token = "8532645384:AAE1EPd4Ol51amuh49f6G-ZO9wbkeptrPvc";
 
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(token, {
+  polling: {
+    interval: 300,
+    autoStart: true,
+    params: {
+      timeout: 10
+    }
+  }
+});
 
 console.log('Bot Running...');
 
