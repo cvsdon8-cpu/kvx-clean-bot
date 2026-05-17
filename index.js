@@ -11,7 +11,7 @@ admin.initializeApp({
 
 const db = admin.database();
 
-const token = process.env.8532645384:AAF8-2fnLx6yJpmMaQFtF0lN1cLpCb-2F9g;
+const token = process.env.BOT_TOKEN;
 
 const bot = new TelegramBot(token, { polling: true });
 
