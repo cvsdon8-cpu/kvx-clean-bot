@@ -24,7 +24,7 @@ bot.setWebHook(`${url}/bot${token}`);
 
 /* GEMINI API */
 
-const GEMINI_API_KEY = "AIzaSyBY8DgkkTpvOjlaDrziKmQsqSAdL0d7mHM";
+const GEMINI_API_KEY = "AIzaSyCcagucr6ay6cmq5LsCFTuzvoB68HB25yw";
 
 /* BOT */
 
