@@ -18,7 +18,7 @@ const token = "8532645384:AAE1EPd4Ol51amuh49f6G-ZO9wbkeptrPvc";
 
 const bot = new TelegramBot(token);
 
-const url = "https://YOUR-RAILWAY-URL.up.railway.app";
+const url = "kvx-clean-bot-production.up.railway.app";
 
 bot.setWebHook(`${url}/bot${token}`);
 
